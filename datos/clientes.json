@@ -1,0 +1,24 @@
+[
+    {
+        "identificador": "C001",
+        "nombre": "camila Torrez",
+        "documento": "1098377357",
+        "correo": "camila@gmail.com",
+        "telefono": "3118233412"
+    },
+    {
+        "identificador": "C002",
+        "nombre": "Sofia Torrez",
+        "documento": "1078255374",
+        "correo": "sofia12@gmail.com",
+        "telefono": "3202236754"
+    },
+    {
+        "identificador": "C003",
+        "nombre": "Andrea Calderon",
+        "documento": "1003327834",
+        "correo": "andre3@gmail.com",
+        "telefono": "3203265413"
+    }
+]
+
