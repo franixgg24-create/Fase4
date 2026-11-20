@@ -1,0 +1,14 @@
+[
+    {
+        "identificador": "001",
+        "nombre": "reserva sala de reuniones ",
+        "tarifa": 50000.0,
+        "tipo": "ReservaSalas"
+    },
+    {
+        "identificador": "S002",
+        "nombre": "sala de reuniones ",
+        "tarifa": 50000.0,
+        "tipo": "ReservaSalas"
+    }
+]
