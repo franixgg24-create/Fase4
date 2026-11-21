@@ -6,10 +6,18 @@ class Reserva:
 
     def __init__(self, identificador, cliente, servicio, cantidad):
         if not identificador:
-            raise DatosInvalidosError("El identificador de la reserva es obligatorio.")
+            raise DatosInvalidosError(
+                "El identificador de la reserva es obligatorio."
+            )
 
-        if cantidad <= 0:
-            raise DatosInvalidosError("La cantidad debe ser mayor que cero.")
+        if (
+            not isinstance(cantidad, (int, float))
+            or isinstance(cantidad, bool)
+            or cantidad <= 0
+        ):
+            raise DatosInvalidosError(
+                "La cantidad debe ser mayor que cero."
+            )
 
         self.__identificador = identificador
         self.__cliente = cliente
