@@ -40,6 +40,10 @@ def registrar_servicio(gestor):
 
     opcion = input("Seleccione una opcion: ").strip()
 
+    if opcion not in ("1", "2", "3"):
+        print("Opcion no valida.")
+        return
+
     identificador = input("Identificador del servicio: ")
     nombre = input("Nombre del servicio: ")
     tarifa = float(input("Tarifa del servicio: "))
@@ -48,11 +52,8 @@ def registrar_servicio(gestor):
         servicio = ReservaSalas(identificador, nombre, tarifa)
     elif opcion == "2":
         servicio = AlquilerEquipos(identificador, nombre, tarifa)
-    elif opcion == "3":
-        servicio = AsesoriaEspecializada(identificador, nombre, tarifa)
     else:
-        print("Opcion no valida.")
-        return
+        servicio = AsesoriaEspecializada(identificador, nombre, tarifa)
 
     gestor.registrar_servicio(servicio)
     print("Servicio registrado correctamente.")
@@ -92,7 +93,6 @@ def consultar_servicios(gestor):
 
     for servicio in servicios:
         print("\n" + servicio.mostrar_informacion())
-        print(f"Tarifa: ${servicio.tarifa:,.2f}")
 
 
 def consultar_reservas(gestor):
@@ -111,7 +111,7 @@ def ejecutar():
 
     while True:
         mostrar_menu()
-        opcion = input("Seleccione una opcion: ")
+        opcion = input("Seleccione una opcion: ").strip()
 
         try:
             if opcion == "1":
