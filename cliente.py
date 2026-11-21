@@ -10,25 +10,33 @@ class Cliente(Entidad):
     def __init__(self, identificador, nombre, documento, correo, telefono):
         super().__init__(identificador)
 
-        self.__nombre = nombre
+        if not isinstance(nombre, str) or not nombre.strip():
+            raise DatosInvalidosError(
+                "El nombre del cliente no puede estar vacio."
+            )
+
+        if not isinstance(documento, str) or not documento.isdigit():
+            raise DatosInvalidosError(
+                "El documento debe contener solo numeros."
+            )
+
+        if not isinstance(telefono, str) or not telefono.isdigit():
+            raise DatosInvalidosError(
+                "El telefono debe contener solo numeros."
+            )
+
+        if not isinstance(correo, str) or not re.fullmatch(
+            r"[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}",
+            correo
+        ):
+            raise DatosInvalidosError(
+                "El correo electronico no es valido."
+            )
+
+        self.__nombre = nombre.strip()
         self.__documento = documento
         self.__correo = correo
         self.__telefono = telefono
-
-        self.validar_datos()
-
-    def validar_datos(self):
-        if not self.__nombre or not self.__nombre.strip():
-            raise DatosInvalidosError("El nombre del cliente no puede estar vacio.")
-
-        if not self.__documento.isdigit():
-            raise DatosInvalidosError("El documento debe contener solo numeros.")
-
-        if not re.match(r"^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$", self.__correo):
-            raise DatosInvalidosError("El correo electronico no es valido.")
-
-        if not self.__telefono.isdigit():
-            raise DatosInvalidosError("El telefono debe contener solo numeros.")
 
     @property
     def nombre(self):
