@@ -1,3 +1,4 @@
+
 [
     {
         "identificador": "C001",
@@ -19,6 +20,19 @@
         "documento": "1003327834",
         "correo": "andre3@gmail.com",
         "telefono": "3203265413"
+    },
+    {
+        "identificador": "C004",
+        "nombre": "Karen Restrepo",
+        "documento": "1002224455",
+        "correo": "karen1@gmail.com",
+        "telefono": "3112344356"
+    },
+    {
+        "identificador": "C005",
+        "nombre": "Ariel",
+        "documento": "1009283263",
+        "correo": "ariel@gmail.com",
+        "telefono": "3209974342"
     }
 ]
-
