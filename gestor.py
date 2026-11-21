@@ -1,8 +1,20 @@
 
+import json
+from pathlib import Path
+
 from cliente import Cliente
-from servicios import Servicio
+from servicios import (
+    Servicio,
+    ReservaSalas,
+    AlquilerEquipos,
+    AsesoriaEspecializada
+)
 from reserva import Reserva
-from excepciones import DatosInvalidosError
+from excepciones import (
+    DatosInvalidosError,
+    ClienteNoEncontradoError,
+    ServicioNoDisponibleError
+)
 from logs import obtener_logger
 
 
@@ -14,30 +26,37 @@ class Gestor:
         self.__reservas = []
         self.__logger = obtener_logger()
 
+        self.__ruta_datos = Path(__file__).parent / "datos"
+        self.__ruta_datos.mkdir(exist_ok=True)
+
+        self.__archivo_clientes = self.__ruta_datos / "clientes.json"
+        self.__archivo_servicios = self.__ruta_datos / "servicios.json"
+        self.__archivo_reservas = self.__ruta_datos / "reservas.json"
+
+        self.__cargar_datos()
+
         self.__logger.info("Sistema iniciado correctamente.")
 
     def registrar_cliente(self, cliente):
 
         if not isinstance(cliente, Cliente):
-            self.__logger.error("Intento de registro con cliente invalido.")
             raise DatosInvalidosError(
                 "El objeto no es un cliente valido."
             )
 
-        if any(c.documento == cliente.documento for c in self.__clientes):
-            self.__logger.warning("Documento de cliente duplicado.")
+        if self.buscar_cliente(cliente.documento):
             raise DatosInvalidosError(
-                "El cliente ya se encuentra registrado."
+                "El documento del cliente ya existe."
             )
 
-        if any(c.identificador == cliente.identificador
-               for c in self.__clientes):
-            self.__logger.warning("Identificador de cliente duplicado.")
-            raise DatosInvalidosError(
-                "El identificador del cliente ya existe."
-            )
+        for c in self.__clientes:
+            if c.identificador == cliente.identificador:
+                raise DatosInvalidosError(
+                    "El identificador del cliente ya existe."
+                )
 
         self.__clientes.append(cliente)
+        self.__guardar_datos()
 
         self.__logger.info(
             f"Cliente registrado: {cliente.nombre}"
@@ -46,19 +65,17 @@ class Gestor:
     def registrar_servicio(self, servicio):
 
         if not isinstance(servicio, Servicio):
-            self.__logger.error("Intento de registro con servicio invalido.")
             raise DatosInvalidosError(
                 "El objeto no es un servicio valido."
             )
 
-        if any(s.identificador == servicio.identificador
-               for s in self.__servicios):
-            self.__logger.warning("Identificador de servicio duplicado.")
+        if self.buscar_servicio(servicio.identificador):
             raise DatosInvalidosError(
-                "El servicio ya se encuentra registrado."
+                "El servicio ya existe."
             )
 
         self.__servicios.append(servicio)
+        self.__guardar_datos()
 
         self.__logger.info(
             f"Servicio registrado: {servicio.nombre}"
@@ -85,33 +102,25 @@ class Gestor:
     ):
 
         cliente = self.buscar_cliente(documento)
-        servicio = self.buscar_servicio(id_servicio)
 
         if cliente is None:
-            self.__logger.error(
-                f"Intento de reserva con cliente inexistente: {documento}"
+            raise ClienteNoEncontradoError(
+                "El cliente no existe."
             )
-            raise DatosInvalidosError("El cliente no existe.")
+
+        servicio = self.buscar_servicio(id_servicio)
 
         if servicio is None:
-            self.__logger.error(
-                f"Intento de reserva con servicio inexistente: {id_servicio}"
+            raise ServicioNoDisponibleError(
+                "El servicio no existe."
             )
-            raise DatosInvalidosError("El servicio no existe.")
-
-        if any(r.identificador == identificador
-               for r in self.__reservas):
-            self.__logger.warning("Identificador de reserva duplicado.")
-            raise DatosInvalidosError("La reserva ya existe.")
 
         reserva = Reserva(
-            identificador,
-            cliente,
-            servicio,
-            cantidad
+            identificador, cliente, servicio, cantidad
         )
 
         self.__reservas.append(reserva)
+        self.__guardar_datos()
 
         self.__logger.info(
             f"Reserva creada: {identificador}"
@@ -120,10 +129,188 @@ class Gestor:
         return reserva
 
     def listar_clientes(self):
-        return list(self.__clientes)
+        return self.__clientes.copy()
 
     def listar_servicios(self):
-        return list(self.__servicios)
+        return self.__servicios.copy()
 
     def listar_reservas(self):
-        return list(self.__reservas)
+        return self.__reservas.copy()
+
+    def __guardar_datos(self):
+
+        clientes = [
+            {
+                "identificador": c.identificador,
+                "nombre": c.nombre,
+                "documento": c.documento,
+                "correo": c.correo,
+                "telefono": c.telefono
+            }
+            for c in self.__clientes
+        ]
+
+        servicios = [
+            {
+                "identificador": s.identificador,
+                "nombre": s.nombre,
+                "tarifa": s.tarifa,
+                "tipo": type(s).__name__
+            }
+            for s in self.__servicios
+        ]
+
+        reservas = [
+            {
+                "identificador": r.identificador,
+                "documento_cliente": r.cliente.documento,
+                "id_servicio": r.servicio.identificador,
+                "cantidad": r.cantidad
+            }
+            for r in self.__reservas
+        ]
+
+        archivos = [
+            (self.__archivo_clientes, clientes),
+            (self.__archivo_servicios, servicios),
+            (self.__archivo_reservas, reservas)
+        ]
+
+        for ruta, datos in archivos:
+            with open(ruta, "w", encoding="utf-8") as archivo:
+                json.dump(
+                    datos,
+                    archivo,
+                    indent=4,
+                    ensure_ascii=False
+                )
+
+        self.__logger.info(
+            "Datos guardados correctamente."
+        )
+
+    def __cargar_datos(self):
+
+        try:
+            for ruta in (
+                self.__archivo_clientes,
+                self.__archivo_servicios,
+                self.__archivo_reservas
+            ):
+                if not ruta.exists():
+                    ruta.write_text("[]", encoding="utf-8")
+
+            with open(
+                self.__archivo_clientes, "r", encoding="utf-8"
+            ) as archivo:
+                datos_clientes = json.load(archivo)
+
+            with open(
+                self.__archivo_servicios, "r", encoding="utf-8"
+            ) as archivo:
+                datos_servicios = json.load(archivo)
+
+            with open(
+                self.__archivo_reservas, "r", encoding="utf-8"
+            ) as archivo:
+                datos_reservas = json.load(archivo)
+
+            # Recuperar clientes y validar duplicados
+
+            for datos in datos_clientes:
+
+                cliente = Cliente(
+                    datos["identificador"],
+                    datos["nombre"],
+                    datos["documento"],
+                    datos["correo"],
+                    datos["telefono"]
+                )
+
+                if self.buscar_cliente(cliente.documento):
+                    raise DatosInvalidosError(
+                        "Hay documentos de clientes duplicados "
+                        "en el archivo JSON."
+                    )
+
+                if any(
+                    c.identificador == cliente.identificador
+                    for c in self.__clientes
+                ):
+                    raise DatosInvalidosError(
+                        "Hay identificadores de clientes duplicados "
+                        "en el archivo JSON."
+                    )
+
+                self.__clientes.append(cliente)
+
+            # Recuperar servicios
+
+            tipos_servicios = {
+                "ReservaSalas": ReservaSalas,
+                "AlquilerEquipos": AlquilerEquipos,
+                "AsesoriaEspecializada": AsesoriaEspecializada
+            }
+
+            for datos in datos_servicios:
+
+                tipo = tipos_servicios.get(datos["tipo"])
+
+                if tipo is None:
+                    raise DatosInvalidosError(
+                        f"Tipo de servicio desconocido: {datos['tipo']}"
+                    )
+
+                servicio = tipo(
+                    datos["identificador"],
+                    datos["nombre"],
+                    datos["tarifa"]
+                )
+
+                if self.buscar_servicio(servicio.identificador):
+                    raise DatosInvalidosError(
+                        "Hay identificadores de servicios duplicados "
+                        "en el archivo JSON."
+                    )
+
+                self.__servicios.append(servicio)
+
+            # Recuperar reservas
+
+            for datos in datos_reservas:
+
+                cliente = self.buscar_cliente(
+                    datos["documento_cliente"]
+                )
+
+                servicio = self.buscar_servicio(
+                    datos["id_servicio"]
+                )
+
+                if cliente is None or servicio is None:
+                    raise DatosInvalidosError(
+                        "No se pudo recuperar una reserva."
+                    )
+
+                reserva = Reserva(
+                    datos["identificador"],
+                    cliente,
+                    servicio,
+                    datos["cantidad"]
+                )
+
+                self.__reservas.append(reserva)
+
+            self.__logger.info(
+                "Datos cargados correctamente."
+            )
+
+        except (json.JSONDecodeError, KeyError, TypeError) as error:
+
+            self.__logger.error(
+                f"Error al cargar los datos: {error}"
+            )
+
+            raise DatosInvalidosError(
+                "Los archivos JSON contienen datos incorrectos."
+            ) from error
